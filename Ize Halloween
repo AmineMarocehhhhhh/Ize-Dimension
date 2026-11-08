@@ -1,0 +1,136 @@
+-- Monster Kill Loop with UI
+-- Your exact loop: kills all monsters you have network ownership of
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- ================= UI =================
+local sg = Instance.new("ScreenGui")
+sg.Name = "MonsterKillUI"
+sg.ResetOnSpawn = false
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 240, 0, 130)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Parent = sg
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255, 80, 80)
+stroke.Thickness = 1.5
+stroke.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -10, 0, 24)
+title.Position = UDim2.new(0, 5, 0, 6)
+title.BackgroundTransparency = 1
+title.Text = "Monster Kill Loop"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -10, 0, 20)
+status.Position = UDim2.new(0, 5, 0, 32)
+status.BackgroundTransparency = 1
+status.Text = "Status: Running"
+status.TextColor3 = Color3.fromRGB(0, 255, 0)
+status.TextScaled = true
+status.Font = Enum.Font.Gotham
+status.Parent = frame
+
+local killedCount = Instance.new("TextLabel")
+killedCount.Size = UDim2.new(1, -10, 0, 20)
+killedCount.Position = UDim2.new(0, 5, 0, 54)
+killedCount.BackgroundTransparency = 1
+killedCount.Text = "Killed: 0"
+killedCount.TextColor3 = Color3.fromRGB(200, 200, 200)
+killedCount.TextScaled = true
+killedCount.Font = Enum.Font.Gotham
+killedCount.Parent = frame
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(1, -10, 0, 24)
+toggleBtn.Position = UDim2.new(0, 5, 0, 82)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+toggleBtn.Text = "STOP"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.Parent = frame
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = toggleBtn
+
+sg.Parent = LP:WaitForChild("PlayerGui")
+
+-- ================= State =================
+local running = true
+local totalKilled = 0
+
+-- ================= Your exact loop =================
+task.spawn(function()
+    while true do
+        if running then
+            local folder = workspace:FindFirstChild("Folders")
+            local monsters = folder and folder:FindFirstChild("Monsters")
+            if monsters then
+                local kids = monsters:GetChildren()
+                if #kids > 0 then
+                    local thisCycle = 0
+                    for _, v in ipairs(kids) do
+                        if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Monster") and isnetworkowner(v.HumanoidRootPart) then
+                            v.Monster.Health = 0
+                            thisCycle = thisCycle + 1
+                        end
+                    end
+                    if thisCycle > 0 then
+                        totalKilled = totalKilled + thisCycle
+                        status.Text = "Status: Killed " .. thisCycle .. " mobs"
+                        killedCount.Text = "Killed: " .. totalKilled
+                        status.TextColor3 = Color3.fromRGB(255, 0, 0)
+                        task.wait(0.2)
+                        status.TextColor3 = Color3.fromRGB(0, 255, 0)
+                        status.Text = "Status: Running"
+                    else
+                        status.Text = "Status: Running"
+                        status.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    end
+                else
+                    status.Text = "Status: No monsters"
+                    status.TextColor3 = Color3.fromRGB(255, 255, 0)
+                end
+            else
+                status.Text = "Status: No Monsters folder"
+                status.TextColor3 = Color3.fromRGB(255, 255, 0)
+            end
+        else
+            status.Text = "Status: Stopped"
+            status.TextColor3 = Color3.fromRGB(255, 255, 0)
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ================= Toggle =================
+toggleBtn.MouseButton1Click:Connect(function()
+    running = not running
+    if running then
+        toggleBtn.Text = "STOP"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        status.Text = "Status: Running"
+        status.TextColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        toggleBtn.Text = "START"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+        status.Text = "Status: Stopped"
+        status.TextColor3 = Color3.fromRGB(255, 255, 0)
+    end
+end)
